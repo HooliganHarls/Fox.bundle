@@ -6,9 +6,9 @@ from PMS.Shortcuts import *
 PLUGIN_PREFIX     = "/video/Fox"
 
 FOX_URL                     = "http://www.fox.com"
-FOX_FULL_EPISODES_SHOW_LIST = "http://www.fox.com/fod/index.htm"
+FOX_FULL_EPISODES_SHOW_LIST = "http://www.fox.com/full-episodes/"
 CACHE_INTERVAL              = 3600
-FOX_FEED                    = "http://www.fox.com/fod/"
+FOX_FEED                    = "http://www.fox.com/fod"
 DEBUG                       = False
 foxart                      ="art-default.png"
 foxthumb                    ="icon-default.png"
@@ -35,25 +35,33 @@ def MainMenu():
 #    dir = MediaContainer(title2=sender.itemTitle)
     pageUrl=FOX_FULL_EPISODES_SHOW_LIST
     content = XML.ElementFromURL(pageUrl, True)
-    for item in content.xpath('//div[@id="episodes-listing"]//ul/li'):
-      titleUrl = item.xpath("a")[0].get('href') + "/rss.xml"
-      if titleUrl.count('/watch/') !=0:
-        titleUrl=titleUrl.replace('/watch/',"")
-      if titleUrl.count('fod/play.php?sh=') !=0:
-        titleUrl=titleUrl.replace('fod/play.php?sh=',"")
-      thumb=titleUrl.replace('/rss.xml',"")
-      thumb="http://www.fox.com/" +thumb +"/images/next_episode.jpg"
-      Log(thumb)
-      titleUrl=FOX_FEED + titleUrl
-      title = item.xpath("a")[0].text_content().strip()
+    Log(content.xpath('//div[@class="showInfo"]'))
+    for item in content.xpath('//li[@class="episodeListItem"]/div[@class="showInfo"]'):
+      Log(XML.StringFromElement(item))
+      titles=item.xpath("a")
+      Log(titles)
+      titleUrl=titles[1].get('href')
       Log(titleUrl)
-      dir.Append(Function(DirectoryItem(VideoPage, title), pageUrl = titleUrl))
+      titleUrl=titleUrl.replace('/full-episodes','')
+      Log(titleUrl)
+      title=item.xpath("h3")[0].text
+      summary=item.xpath("h4")[0].text
+      thumb=""
+      Log(thumb)
+      titleUrl=FOX_FEED + titleUrl + "/rss.xml"
+      titleUrl=titleUrl.replace('//','/')
+      titleUrl=titleUrl.replace('http:/www','http://www')
+      
+      
+      Log(titleUrl)
+      if titleUrl.count('simpson') == 0:
+        if (titleUrl.count('americasmostwanted')) ==0:
+          dir.Append(Function(DirectoryItem(VideoPage, title,summary), pageUrl = titleUrl))
     return dir 
 
 ####################################################################################################
 def VideoPage(sender, pageUrl):
     dir = MediaContainer(title2=sender.itemTitle)
-    Log("Hello")
     Log(pageUrl)
     content = XML.ElementFromURL(pageUrl, False)
     for item2 in content.xpath('/rss/channel/item'):
@@ -62,7 +70,9 @@ def VideoPage(sender, pageUrl):
       vidUrl=item2.xpath("link")[0].text
       Log(vidUrl)
       title2 = item2.xpath("title")[0].text
-      
+      title1 = item2.xpath("pubDate")[0].text
+      summary=item2.xpath("description")[0].text
+      summary=summary.replace("&#039;","'")
       
       
       content2 = XML.ElementFromURL(vidUrl,True)
@@ -83,7 +93,7 @@ def VideoPage(sender, pageUrl):
       isVid = content2.xpath('//div[@id="player"]//object/param[@name="isVid"]')[0].get("value")
       videoPlayer = content2.xpath('//div[@id="player"]//object/param[@name="@videoPlayer"]')[0].get("value")
       wmode = content2.xpath('//div[@id="player"]//object/param[@name="wmode"]')[0].get("value")
-      adServerURL = content2.xpath('//div[@id="player"]//object/param[@name="adServerURL"]')[0].get("value")
+      adZone = content2.xpath('//div[@id="player"]//object/param[@name="adZone"]')[0].get("value")
       showCode = content2.xpath('//div[@id="player"]//object/param[@name="showCode"]')[0].get("value")
       omnitureAccountID = content2.xpath('//div[@id="player"]//object/param[@name="omnitureAccountID"]')[0].get("value")
       dynamicStreaming = content2.xpath('//div[@id="player"]//object/param[@name="dynamicStreaming"]')[0].get("value")
@@ -93,9 +103,9 @@ def VideoPage(sender, pageUrl):
       
 
       
-      truevidUrl="http://admin.brightcove.com/viewer/us1.24.00.06a/BrightcoveBootloader.swf?purl=" + pageUrl2 + "videoPlayer=" + videoID + "&adServerURL=" + adServerURL + "&autoStart=true" + "&bgcolor=" + bgcolor + "&convivaEnabled=" + convivaEnabled + "&convivaID=" + convivaID + "&dynamicStreaming=" + dynamicStreaming + "&flashID=myExperience" + "&height=" + height + "&isVid=" + isVid + "&omnitureAccountID=" + omnitureAccountID + "&optimizedContentLoad=" + optimizedContentLoad + "&playerID=" + playerID + "&publisherID=" + publisherID + "&showcode=" + showCode + "&width=" + width +"&wmode=" + wmode
+      truevidUrl="http://admin.brightcove.com/viewer/us1.24.00.06a/BrightcoveBootloader.swf?purl=" + pageUrl2 + "videoPlayer=" + videoID + "&adZone=" + adZone + "&autoStart=true" + "&bgcolor=" + bgcolor + "&convivaEnabled=" + convivaEnabled + "&convivaID=" + convivaID + "&dynamicStreaming=" + dynamicStreaming + "&flashID=myExperience" + "&height=" + height + "&isVid=" + isVid + "&omnitureAccountID=" + omnitureAccountID + "&optimizedContentLoad=" + optimizedContentLoad + "&playerID=" + playerID + "&publisherID=" + publisherID + "&showcode=" + showCode + "&width=" + width +"&wmode=" + wmode
       
       Log(truevidUrl)
 
-      dir.Append(WebVideoItem(truevidUrl, title=title2))
+      dir.Append(WebVideoItem(truevidUrl, title=title2, subtitle=title1,summary=summary))
     return dir
