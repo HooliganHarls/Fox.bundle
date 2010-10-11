@@ -37,47 +37,46 @@ def MainMenu():
     content = XML.ElementFromURL(pageUrl, True)
     Log(content.xpath('//div[@class="showInfo"]'))
     for item in content.xpath('//li[@class="episodeListItem"]/div[@class="showInfo"]'):
-      Log(XML.StringFromElement(item))
+
       titles=item.xpath("a")
       Log(titles)
-      titleUrl=titles[1].get('href')
+      titleUrl=FOX_URL + titles[1].get('href')
       Log(titleUrl)
-      titleUrl=titleUrl.replace('/full-episodes','')
+
       Log(titleUrl)
       title=item.xpath("h3")[0].text
       summary=item.xpath("h4")[0].text
       thumb=""
       Log(thumb)
-      titleUrl=FOX_FEED + titleUrl + "/rss.xml"
-      titleUrl=titleUrl.replace('//','/')
-      titleUrl=titleUrl.replace('http:/www','http://www')
+
       
       
       Log(titleUrl)
-      if titleUrl.count('simpson') == 0:
-        if (titleUrl.count('americasmostwanted')) ==0:
-          dir.Append(Function(DirectoryItem(VideoPage, title,summary), pageUrl = titleUrl))
+      if (titleUrl.count('americasmostwanted')) ==0:
+        dir.Append(Function(DirectoryItem(VideoPage, title,summary), pageUrl = titleUrl))
     return dir 
 
 ####################################################################################################
 def VideoPage(sender, pageUrl):
     dir = MediaContainer(title2=sender.itemTitle)
     Log(pageUrl)
-    content = XML.ElementFromURL(pageUrl, False)
-    for item2 in content.xpath('/rss/channel/item'):
+    content = XML.ElementFromURL(pageUrl, isHTML="True")
+    for item2 in content.xpath('//ul[@id="fullEpisodesList"]/li[contains(@class,"episode")]/ul'):
 
 
-      vidUrl=item2.xpath("link")[0].text
+      vidUrl=FOX_URL+item2.xpath('li[@class="episodeName"]/span/a')[0].get('href')
       Log(vidUrl)
-      title2 = item2.xpath("title")[0].text
-      title1 = item2.xpath("pubDate")[0].text
-      summary=item2.xpath("description")[0].text
-      summary=summary.replace("&#039;","'")
+      title2 = item2.xpath('li[@class="episodeName"]/span/a')[0].text
+      Log(title2)
+      Log(item2.xpath('li[@class="episodeNumber"]')[0].text)
+      title1 = item2.xpath('li[@class="episodeName"]/span/a')[0].text
+      summary=item2.xpath('li[@class="description"]')[0].get('href')
+      airdate=item2.xpath('li[@class="airDate"]')[0].text
+      title2=title2 + " - " + airdate
       
       
       content2 = XML.ElementFromURL(vidUrl,True)
-      pageUrl2=pageUrl.replace("/rss.xml","")
-      pagUrl2=pageUrl.replace("fod//","fod/")
+      pageUrl2=pageUrl
       pageUrl2=pageUrl2.replace("/","%2F")
       pageUrl2=pageUrl2.replace(":","%3A")
       pageUrl2=pageUrl2+"&%40"
